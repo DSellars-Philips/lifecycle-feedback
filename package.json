@@ -1,0 +1,24 @@
+{
+  "name": "lifecycle-feedback",
+  "version": "0.1.0",
+  "description": "Azure-ready feedback collection system for submitters, managers, and action owners.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "setup-db": "node server/index.js --init-db"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.4",
+    "express-async-errors": "^3.1.1",
+    "multer": "^1.4.5-lts.1",
+    "sqlite": "^4.0.24",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "license": "MIT"
+}

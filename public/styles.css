@@ -1,0 +1,167 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f2f5f8;
+  color: #1f2937;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+  margin-bottom: 24px;
+}
+
+.hidden {
+  display: none;
+}
+
+label {
+  display: block;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+input[type="text"],
+input[type="date"],
+textarea,
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.96rem;
+}
+
+textarea { resize: vertical; }
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.notice {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.card p {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #e2e8f0;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.truncate {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-panel {
+  margin-top: 16px;
+}
+
+.detail-panel h3 {
+  margin-top: 0;
+}
+
+.detail-panel textarea {
+  min-height: 100px;
+}
+
+.preview-list {
+  margin-top: 12px;
+  padding-left: 16px;
+}
+
+.preview-list li {
+  margin-bottom: 6px;
+}
+
+small {
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}

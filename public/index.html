@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lifecycle Feedback System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Lifecycle Feedback System</h1>
+      <p>Submit feedback, manage requests, and keep action owners updated in a shared Azure-ready solution.</p>
+    </header>
+
+    <section class="role-selector">
+      <label for="roleSelect">Select your role</label>
+      <select id="roleSelect">
+        <option value="submitter">Feedback Submitter</option>
+        <option value="manager">Feedback Manager</option>
+        <option value="owner">Action Owner</option>
+      </select>
+    </section>
+
+    <section id="submitterSection" class="panel">
+      <h2>Submit Feedback</h2>
+      <form id="submitFeedbackForm">
+        <label>Short description<input type="text" name="shortDescription" required /></label>
+        <label>Long description<textarea name="longDescription" rows="5" required></textarea></label>
+        <label>Your name<input type="text" name="submitterName" placeholder="Optional" /></label>
+        <label>Feedback type<select name="feedbackType">
+          <option value="Tooling">Tooling</option>
+          <option value="Product">Product</option>
+          <option value="Process">Process</option>
+          <option value="Other">Other</option>
+        </select></label>
+        <label>Product name<input type="text" name="productName" placeholder="Optional" /></label>
+        <label>Attachments<input type="file" name="attachments" multiple /></label>
+        <button type="submit">Submit Feedback</button>
+      </form>
+      <div id="submitResult" class="notice"></div>
+    </section>
+
+    <section id="managerSection" class="panel hidden">
+      <h2>Manager Dashboard</h2>
+      <div class="dashboard-cards" id="dashboardCards"></div>
+      <div class="table-toolbar">
+        <label>Filter status<select id="statusFilter"><option value="all">All</option></select></label>
+      </div>
+      <div id="managerTable"></div>
+      <div id="feedbackDetail" class="detail-panel hidden"></div>
+    </section>
+
+    <section id="ownerSection" class="panel hidden">
+      <h2>Action Owner Workspace</h2>
+      <label>Action owner name<input type="text" id="ownerName" placeholder="Enter your name" /></label>
+      <button id="loadOwnerActions">Load My Actions</button>
+      <div id="ownerActions"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
