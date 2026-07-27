@@ -29,6 +29,10 @@ function now() {
   return new Date().toISOString();
 }
 
+function normalizeEmail(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : value;
+}
+
 async function ensureColumnExists(table, column, definition) {
   const row = await db.get(`PRAGMA table_info(${table}) WHERE name = ?`, column);
   if (!row) {
@@ -135,13 +139,15 @@ app.post('/api/feedback', upload.array('attachments', 6), async (req, res) => {
     productName
   } = req.body;
 
+  const normalizedSubmitterEmail = normalizeEmail(submitterEmail);
+  const normalizedSubmitterName = normalizeEmail(submitterName) || normalizedSubmitterEmail || 'anonymous';
   const timestamp = now();
   const result = await db.run(
     `INSERT INTO feedback (shortDescription, longDescription, submitterName, submitterEmail, feedbackType, productName, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     shortDescription,
     longDescription,
-    submitterName || 'Anonymous',
-    submitterEmail || '',
+    normalizedSubmitterName,
+    normalizedSubmitterEmail || '',
     feedbackType || 'Unclassified',
     productName || '',
     timestamp,
@@ -192,9 +198,12 @@ app.put('/api/feedback/:id', async (req, res) => {
     dueDateCompletion,
     nextActions,
     triageDecision,
-    triageComment
+    triageComment,
+    userEmail
   } = req.body;
 
+  const normalizedActionOwner = normalizeEmail(actionOwner);
+  const normalizedUserEmail = normalizeEmail(userEmail);
   const updatedAt = now();
   await db.run(`
     UPDATE feedback SET
@@ -214,7 +223,7 @@ app.put('/api/feedback/:id', async (req, res) => {
   status || existing.status,
   feedbackType || existing.feedbackType,
   teamOwner || existing.teamOwner,
-  actionOwner || existing.actionOwner,
+  normalizedActionOwner || existing.actionOwner,
   productName || existing.productName,
   dueDateNextAction || existing.dueDateNextAction,
   dueDateCompletion || existing.dueDateCompletion,
@@ -226,9 +235,9 @@ app.put('/api/feedback/:id', async (req, res) => {
 
   await db.run(`INSERT INTO history (feedbackId, userName, eventType, note, createdAt) VALUES (?, ?, ?, ?, ?)`,
     req.params.id,
-    req.body.managerName || 'Manager',
+    normalizedUserEmail || req.body.managerName || 'Manager',
     'Updated',
-    `Updated feedback fields: status=${status || existing.status}, owner=${actionOwner || existing.actionOwner}.`,
+    `Updated feedback fields: status=${status || existing.status}, owner=${normalizedActionOwner || existing.actionOwner}.`,
     updatedAt
   );
 
@@ -276,25 +285,27 @@ app.post('/api/feedback/:id/actions', async (req, res) => {
   const existing = await db.get(`SELECT * FROM feedback WHERE id = ?`, feedbackId);
   if (!existing) return res.status(404).json({ error: 'Feedback not found' });
 
-  const { title, details, owner, dueDate, status, createdBy } = req.body;
+  const { title, details, owner, dueDate, status, createdBy, userEmail } = req.body;
+  const normalizedOwner = normalizeEmail(owner);
+  const normalizedCreatedBy = normalizeEmail(createdBy) || normalizeEmail(userEmail) || 'manager';
   const timestamp = now();
   const result = await db.run(
     `INSERT INTO actions (feedbackId, title, details, owner, dueDate, status, result, createdBy, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     feedbackId,
     title,
     details || '',
-    owner || '',
+    normalizedOwner || '',
     dueDate || '',
     status || 'Pending',
     '',
-    createdBy || 'Manager',
+    normalizedCreatedBy,
     timestamp,
     timestamp
   );
 
   await db.run(`INSERT INTO history (feedbackId, userName, eventType, note, createdAt) VALUES (?, ?, ?, ?, ?)`,
     feedbackId,
-    createdBy || 'Manager',
+    normalizedCreatedBy,
     'Action added',
     `Created action '${title}'.`,
     timestamp
@@ -308,7 +319,9 @@ app.put('/api/actions/:id', async (req, res) => {
   const existing = await db.get(`SELECT * FROM actions WHERE id = ?`, req.params.id);
   if (!existing) return res.status(404).json({ error: 'Action not found' });
 
-  const { title, details, owner, dueDate, status, result } = req.body;
+  const { title, details, owner, dueDate, status, result, updatedBy, userEmail } = req.body;
+  const normalizedOwner = normalizeEmail(owner);
+  const normalizedUpdatedBy = normalizeEmail(updatedBy) || normalizeEmail(userEmail) || normalizeEmail(existing.owner) || 'action owner';
   const updatedAt = now();
   await db.run(`
     UPDATE actions SET
@@ -323,7 +336,7 @@ app.put('/api/actions/:id', async (req, res) => {
   `,
   title || existing.title,
   details || existing.details,
-  owner || existing.owner,
+  normalizedOwner || existing.owner,
   dueDate || existing.dueDate,
   status || existing.status,
   result || existing.result,
@@ -332,7 +345,7 @@ app.put('/api/actions/:id', async (req, res) => {
 
   await db.run(`INSERT INTO history (feedbackId, userName, eventType, note, createdAt) VALUES (?, ?, ?, ?, ?)`,
     existing.feedbackId,
-    req.body.updatedBy || existing.owner || 'Action Owner',
+    normalizedUpdatedBy,
     'Action updated',
     `Updated action '${title || existing.title}'.`,
     updatedAt
@@ -354,12 +367,13 @@ app.get('/api/feedback/:id/history', async (req, res) => {
 
 app.post('/api/feedback/:id/history', async (req, res) => {
   const feedbackId = req.params.id;
-  const { userName, eventType, note } = req.body;
+  const { userEmail, eventType, note } = req.body;
+  const normalizedUserEmail = normalizeEmail(userEmail);
   const timestamp = now();
   const result = await db.run(
     `INSERT INTO history (feedbackId, userName, eventType, note, createdAt) VALUES (?, ?, ?, ?, ?)`,
     feedbackId,
-    userName || 'Contributor',
+    normalizedUserEmail || 'Contributor',
     eventType || 'Note',
     note || '',
     timestamp

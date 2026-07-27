@@ -11,9 +11,22 @@
     <header>
       <h1>Lifecycle Feedback System</h1>
       <p>Submit feedback, manage requests, and keep action owners updated in a shared Azure-ready solution.</p>
+      <div id="currentUserInfo" class="user-info hidden">
+        Logged in as <strong id="currentUserEmail"></strong>
+        <button id="changeUserEmail" type="button">Change</button>
+      </div>
     </header>
 
-    <section class="role-selector">
+    <section id="userEmailPrompt" class="panel">
+      <h2>Enter your email</h2>
+      <form id="userEmailForm">
+        <label>Email<input type="email" id="userEmailInput" placeholder="you@example.com" required /></label>
+        <button type="submit">Continue</button>
+      </form>
+      <div id="userEmailMessage" class="notice"></div>
+    </section>
+
+    <section class="role-selector hidden">
       <label for="roleSelect">Select your role</label>
       <select id="roleSelect">
         <option value="submitter">Feedback Submitter</option>
@@ -22,11 +35,10 @@
       </select>
     </section>
 
-    <section id="submitterSection" class="panel">
+    <section id="submitterSection" class="panel hidden">
       <h2>Submit Feedback</h2>
       <form id="submitFeedbackForm">
         <label>Short description<input type="text" name="shortDescription" required /></label>
-        <label>Your email<input type="email" name="submitterEmail" required placeholder="you@example.com" /></label>
         <label>Long description<textarea name="longDescription" rows="5" required></textarea></label>
         <label>Feedback type<select name="feedbackType">
           <option value="Tooling">Tooling</option>
@@ -53,7 +65,7 @@
 
     <section id="ownerSection" class="panel hidden">
       <h2>Action Owner Workspace</h2>
-      <label>Action owner name<input type="text" id="ownerName" placeholder="Enter your name" /></label>
+      <label>Action owner email<input type="email" id="ownerEmail" placeholder="owner@example.com" /></label>
       <button id="loadOwnerActions">Load My Actions</button>
       <div id="ownerActions"></div>
     </section>

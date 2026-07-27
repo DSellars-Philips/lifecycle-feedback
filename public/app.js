@@ -1,3 +1,11 @@
+const currentUserInfo = document.getElementById('currentUserInfo');
+const currentUserEmailEl = document.getElementById('currentUserEmail');
+const changeUserEmail = document.getElementById('changeUserEmail');
+const userEmailPrompt = document.getElementById('userEmailPrompt');
+const userEmailForm = document.getElementById('userEmailForm');
+const userEmailInput = document.getElementById('userEmailInput');
+const userEmailMessage = document.getElementById('userEmailMessage');
+const roleSelectorSection = document.querySelector('.role-selector');
 const roleSelect = document.getElementById('roleSelect');
 const submitterSection = document.getElementById('submitterSection');
 const managerSection = document.getElementById('managerSection');
@@ -8,9 +16,10 @@ const dashboardCards = document.getElementById('dashboardCards');
 const managerTable = document.getElementById('managerTable');
 const statusFilter = document.getElementById('statusFilter');
 const feedbackDetail = document.getElementById('feedbackDetail');
-const ownerNameInput = document.getElementById('ownerName');
+const ownerEmailInput = document.getElementById('ownerEmail');
 const loadOwnerActions = document.getElementById('loadOwnerActions');
 const ownerActions = document.getElementById('ownerActions');
+let currentUserEmail = '';
 let feedbackItems = [];
 let statusValues = ['New', 'Accepted', 'In Progress', 'Complete', 'Declined'];
 
@@ -20,12 +29,63 @@ function showRole(role) {
   ownerSection.classList.toggle('hidden', role !== 'owner');
 }
 
+function setCurrentUserEmail(email) {
+  currentUserEmail = email;
+  localStorage.setItem('currentUserEmail', email);
+  currentUserEmailEl.textContent = email;
+  currentUserInfo.classList.remove('hidden');
+  userEmailPrompt.classList.add('hidden');
+  roleSelectorSection.classList.remove('hidden');
+  showRole(roleSelect.value);
+  loadDashboard();
+  loadFeedback();
+}
+
+function clearCurrentUserEmail() {
+  currentUserEmail = '';
+  localStorage.removeItem('currentUserEmail');
+  currentUserEmailEl.textContent = '';
+  currentUserInfo.classList.add('hidden');
+  roleSelectorSection.classList.add('hidden');
+  submitterSection.classList.add('hidden');
+  managerSection.classList.add('hidden');
+  ownerSection.classList.add('hidden');
+  userEmailPrompt.classList.remove('hidden');
+}
+
+function loadCurrentUser() {
+  const savedEmail = localStorage.getItem('currentUserEmail');
+  if (savedEmail) {
+    setCurrentUserEmail(savedEmail);
+  } else {
+    clearCurrentUserEmail();
+  }
+}
+
 roleSelect.addEventListener('change', () => showRole(roleSelect.value));
+
+userEmailForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const email = userEmailInput.value.trim().toLowerCase();
+  if (!email) {
+    userEmailMessage.textContent = 'Please enter a valid email address.';
+    return;
+  }
+
+  userEmailMessage.textContent = '';
+  setCurrentUserEmail(email);
+});
+
+changeUserEmail.addEventListener('click', () => {
+  clearCurrentUserEmail();
+});
 
 submitFeedbackForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   submitResult.textContent = '';
   const formData = new FormData(submitFeedbackForm);
+  formData.append('submitterEmail', currentUserEmail);
+  formData.append('submitterName', currentUserEmail);
 
   try {
     const response = await fetch('/api/feedback', {
@@ -162,8 +222,8 @@ async function showFeedbackDetail(feedbackId) {
     <h3>Feedback ${feedback.id}</h3>
     <div><strong>Short description:</strong> ${feedback.shortDescription}</div>
     <div><strong>Long description:</strong> <pre>${feedback.longDescription}</pre></div>
-    <div><strong>Submitter:</strong> ${feedback.submitterName}</div>
-    <div><strong>Submitter email:</strong> ${feedback.submitterEmail || '-'}</div>
+    <div><strong>Submitted by:</strong> ${feedback.submitterEmail || feedback.submitterName || '-'}</div>
+    <div><strong>Status:</strong> ${feedback.status}</div>
     <div><strong>Status:</strong> ${feedback.status}</div>
     <div><strong>Type:</strong> ${feedback.feedbackType}</div>
     <div><strong>Team ownership:</strong> ${feedback.teamOwner || '-'}</div>
@@ -183,32 +243,35 @@ async function showFeedbackDetail(feedbackId) {
       <h4>Update feedback</h4>
       <form id="feedbackUpdateForm">
         <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
-        <label>Type<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
+            <label>Type<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
         <label>Team owner<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
-        <label>Action owner<input type="text" name="actionOwner" value="${feedback.actionOwner || ''}" /></label>
+        <label>Action owner<input type="email" name="actionOwner" value="${feedback.actionOwner || ''}" placeholder="owner@example.com" /></label>
         <label>Product name<input type="text" name="productName" value="${feedback.productName || ''}" /></label>
         <label>Next action due<input type="date" name="dueDateNextAction" value="${feedback.dueDateNextAction || ''}" /></label>
         <label>Completion due<input type="date" name="dueDateCompletion" value="${feedback.dueDateCompletion || ''}" /></label>
         <label>Next actions<textarea name="nextActions">${feedback.nextActions || ''}</textarea></label>
         <label>Triage decision<select name="triageDecision"><option value="Pending" ${feedback.triageDecision === 'Pending' ? 'selected' : ''}>Pending</option><option value="Accepted" ${feedback.triageDecision === 'Accepted' ? 'selected' : ''}>Accepted</option><option value="Declined" ${feedback.triageDecision === 'Declined' ? 'selected' : ''}>Declined</option></select></label>
         <label>Triage comment<textarea name="triageComment">${feedback.triageComment || ''}</textarea></label>
-        <label>Manager name<input type="text" name="managerName" placeholder="Manager name" /></label>
         <button type="submit">Save updates</button>
       </form>
-      <h4>Add an action</h4>
+      <h4>Create action plan</h4>
       <form id="actionAddForm">
         <label>Action title<input type="text" name="title" required /></label>
         <label>Details<textarea name="details"></textarea></label>
-        <label>Owner<input type="text" name="owner" /></label>
+        <label>Owner email<input type="email" name="owner" required placeholder="owner@example.com" /></label>
         <label>Due date<input type="date" name="dueDate" /></label>
         <label>Status<select name="status"><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Complete">Complete</option></select></label>
-        <label>Created by<input type="text" name="createdBy" placeholder="Your name" /></label>
         <button type="submit">Add action</button>
       </form>
       <h4>Actions</h4>
       <ul class="preview-list">
         ${actions.map((action) => `<li><strong>${action.title}</strong> [${action.status}] assigned to ${action.owner || 'unassigned'} - due ${action.dueDate || 'none'}. Result: ${action.result || 'TBD'}</li>`).join('') || '<li>No actions yet</li>'}
       </ul>
+      <h4>Review notes</h4>
+      <form id="feedbackNoteForm">
+        <label>Note<textarea name="note" rows="3"></textarea></label>
+        <button type="submit">Add note</button>
+      </form>
       <h4>History</h4>
       <ul class="preview-list">
         ${history.map((entry) => `<li>${new Date(entry.createdAt).toLocaleString()}: <strong>${entry.eventType}</strong> by ${entry.userName || 'unknown'} - ${entry.note}</li>`).join('') || '<li>No history yet</li>'}
@@ -222,6 +285,7 @@ async function showFeedbackDetail(feedbackId) {
   updateForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(updateForm).entries());
+    data.userEmail = currentUserEmail;
     await fetchJson(`/api/feedback/${feedback.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -235,6 +299,8 @@ async function showFeedbackDetail(feedbackId) {
   actionAddForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(actionAddForm).entries());
+    data.createdBy = currentUserEmail;
+    data.userEmail = currentUserEmail;
     await fetchJson(`/api/feedback/${feedback.id}/actions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -246,13 +312,13 @@ async function showFeedbackDetail(feedbackId) {
 }
 
 async function loadOwnerActionsList() {
-  const ownerName = ownerNameInput.value.trim();
-  if (!ownerName) {
-    ownerActions.innerHTML = '<p>Please enter your name to see assigned actions.</p>';
+  const ownerEmail = ownerEmailInput.value.trim().toLowerCase();
+  if (!ownerEmail) {
+    ownerActions.innerHTML = '<p>Please enter an owner email to see assigned actions.</p>';
     return;
   }
 
-  const actions = await fetchJson(`/api/actions/owner/${encodeURIComponent(ownerName)}`);
+  const actions = await fetchJson(`/api/actions/owner/${encodeURIComponent(ownerEmail)}`);
   ownerActions.innerHTML = '';
   if (!actions.length) {
     ownerActions.innerHTML = '<p>No actions found for this owner.</p>';
@@ -299,7 +365,6 @@ function openActionUpdateDialog(actionId, action) {
       <label>Status<select name="status"><option value="Pending" ${action.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="In Progress" ${action.status === 'In Progress' ? 'selected' : ''}>In Progress</option><option value="Complete" ${action.status === 'Complete' ? 'selected' : ''}>Complete</option></select></label>
       <label>Result<textarea name="result">${action.result || ''}</textarea></label>
       <label>Due date<input type="date" name="dueDate" value="${action.dueDate || ''}" /></label>
-      <label>Updated by<input type="text" name="updatedBy" value="${ownerNameInput.value.trim()}" /></label>
       <button type="submit">Save action</button>
       <button type="button" id="closeDialog">Cancel</button>
     </form>
@@ -313,6 +378,8 @@ function openActionUpdateDialog(actionId, action) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
+    data.updatedBy = currentUserEmail;
+    data.userEmail = currentUserEmail;
     await fetchJson(`/api/actions/${actionId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -323,8 +390,7 @@ function openActionUpdateDialog(actionId, action) {
   });
 }
 
-loadDashboard();
-loadFeedback();
+loadCurrentUser();
 renderFilterOptions();
 showRole(roleSelect.value);
 loadOwnerActions.addEventListener('click', loadOwnerActionsList);
