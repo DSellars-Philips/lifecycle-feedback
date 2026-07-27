@@ -189,6 +189,7 @@ function renderReportingPanels() {
   }).length;
   const withoutDueDate = feedbackItems.filter((item) => !item.dueDateNextAction).length;
   const ownerGroups = [...new Set(feedbackItems.filter((item) => item.actionOwner).map((item) => item.actionOwner))].length;
+  const unassigned = feedbackItems.filter((item) => !item.actionOwner).length;
 
   if (statusChartInstance) {
     statusChartInstance.destroy();
@@ -447,14 +448,8 @@ async function showFeedbackDetail(feedbackId) {
           </form>
 
           <h4 class="mt-20">Status Updates</h4>
-          <p class="status-updates-note">Enter an update summary below. New updates are prepended and saved with your email and timestamp so the latest progress appears first.</p>
-          <form id="nextActionUpdateForm" class="next-action-update">
-            <label>Status update<textarea name="nextActionUpdate" placeholder="Enter your update here"></textarea></label>
-            <button type="submit">Add update</button>
-          </form>
-          <div class="next-actions-list" id="nextActionsList">
-            ${feedback.nextActions ? feedback.nextActions.split('\n').map((line) => `<p>${line}</p>`).join('') : '<p>No updates yet</p>'}
-          </div>
+          <p class="status-updates-note">Type a single update in the top blank line. When you leave the field, the note is saved and prepended with your date and email.</p>
+          <label>Status Updates<textarea id="statusUpdatesInput" class="status-updates-textarea" placeholder="Click here, type an update, and click away to save."></textarea></label>
         </div>
 
         <div class="detail-modal-section">
@@ -478,7 +473,7 @@ async function showFeedbackDetail(feedbackId) {
         </div>
       </div>
 
-      <div class="detail-modal-section">
+      <div class="detail-modal-section history-section">
         <h4>History</h4>
         <ul class="preview-list">
           ${history.map((entry) => `<li>${new Date(entry.createdAt).toLocaleString()}: <strong>${entry.eventType}</strong> by ${entry.userName || 'unknown'} - ${entry.note}</li>`).join('') || '<li>No history yet</li>'}
@@ -499,8 +494,39 @@ async function showFeedbackDetail(feedbackId) {
   });
 
   const updateForm = document.getElementById('feedbackUpdateForm');
-  const nextActionUpdateForm = document.getElementById('nextActionUpdateForm');
-  const nextActionsList = document.getElementById('nextActionsList');
+  const statusUpdatesInput = document.getElementById('statusUpdatesInput');
+
+  function formatDateDMY(date) {
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}.${m}.${y}`;
+  }
+
+  function loadStatusUpdates() {
+    const existingLines = feedback.nextActions ? feedback.nextActions.split('\n').filter((line) => line.trim() !== '') : [];
+    statusUpdatesInput.value = '\n' + existingLines.join('\n');
+  }
+
+  async function saveStatusUpdate() {
+    const lines = statusUpdatesInput.value.split('\n');
+    const firstLineText = lines[0].trim();
+    if (!firstLineText) {
+      return;
+    }
+
+    const existingLines = lines.slice(1).filter((line) => line.trim() !== '');
+    const formatted = `${formatDateDMY(new Date())} ${currentUserEmail} - "${firstLineText}"`;
+    const updatedNextActions = [formatted, ...existingLines].join('\n');
+
+    await fetchJson(`/api/feedback/${feedback.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nextActions: updatedNextActions, userEmail: currentUserEmail })
+    });
+
+    statusUpdatesInput.value = '\n' + updatedNextActions;
+  }
 
   updateForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -516,26 +542,8 @@ async function showFeedbackDetail(feedbackId) {
     showFeedbackDetail(feedback.id);
   });
 
-  nextActionUpdateForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const updateText = nextActionUpdateForm.nextActionUpdate.value.trim();
-    if (!updateText) {
-      return;
-    }
-
-    const metadata = `${new Date().toLocaleString()} by ${currentUserEmail}`;
-    const newLine = `${metadata} — ${updateText}`;
-    const updatedNextActions = [newLine, ...(feedback.nextActions ? feedback.nextActions.split('\n') : [])].join('\n');
-
-    await fetchJson(`/api/feedback/${feedback.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nextActions: updatedNextActions, userEmail: currentUserEmail })
-    });
-
-    nextActionsList.innerHTML = updatedNextActions.split('\n').map((line) => `<p>${line}</p>`).join('');
-    nextActionUpdateForm.reset();
-  });
+  loadStatusUpdates();
+  statusUpdatesInput.addEventListener('blur', saveStatusUpdate);
 
   const actionPlanList = document.getElementById('actionPlanList');
   const newActionFormContainer = document.getElementById('newActionFormContainer');
