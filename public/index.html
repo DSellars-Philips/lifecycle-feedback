@@ -11,6 +11,13 @@
     <header>
       <h1>Lifecycle Feedback System</h1>
       <p>Submit feedback, manage requests, and keep action owners updated in a shared Azure-ready solution.</p>
+      <div class="auth-banner">
+        <span id="authStatus">Not signed in.</span>
+        <div class="auth-actions">
+          <button type="button" id="signInButton">Sign in with Entra ID</button>
+          <button type="button" id="signOutButton" class="hidden">Sign out</button>
+        </div>
+      </div>
     </header>
 
     <section class="role-selector">
@@ -24,10 +31,10 @@
 
     <section id="submitterSection" class="panel">
       <h2>Submit Feedback</h2>
+      <div id="submitterAuthMessage" class="notice">Please sign in with Entra ID before submitting feedback.</div>
       <form id="submitFeedbackForm">
         <label>Short description<input type="text" name="shortDescription" required /></label>
         <label>Long description<textarea name="longDescription" rows="5" required></textarea></label>
-        <label>Your name<input type="text" name="submitterName" placeholder="Optional" /></label>
         <label>Feedback type<select name="feedbackType">
           <option value="Tooling">Tooling</option>
           <option value="Product">Product</option>
@@ -36,7 +43,7 @@
         </select></label>
         <label>Product name<input type="text" name="productName" placeholder="Optional" /></label>
         <label>Attachments<input type="file" name="attachments" multiple /></label>
-        <button type="submit">Submit Feedback</button>
+        <button type="submit" disabled>Submit Feedback</button>
       </form>
       <div id="submitResult" class="notice"></div>
     </section>
