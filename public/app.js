@@ -11,12 +11,6 @@ const feedbackDetail = document.getElementById('feedbackDetail');
 const ownerNameInput = document.getElementById('ownerName');
 const loadOwnerActions = document.getElementById('loadOwnerActions');
 const ownerActions = document.getElementById('ownerActions');
-const authStatus = document.getElementById('authStatus');
-const signInButton = document.getElementById('signInButton');
-const signOutButton = document.getElementById('signOutButton');
-const submitterAuthMessage = document.getElementById('submitterAuthMessage');
-
-let currentUser = null;
 let feedbackItems = [];
 let statusValues = ['New', 'Accepted', 'In Progress', 'Complete', 'Declined'];
 
@@ -28,54 +22,14 @@ function showRole(role) {
 
 roleSelect.addEventListener('change', () => showRole(roleSelect.value));
 
-signInButton.addEventListener('click', () => {
-  window.location.href = '/auth/signin';
-});
-
-signOutButton.addEventListener('click', () => {
-  window.location.href = '/auth/signout';
-});
-
-function setAuthState(user) {
-  currentUser = user;
-  if (currentUser) {
-    authStatus.textContent = `Signed in as ${currentUser.name || currentUser.username}`;
-    signInButton.classList.add('hidden');
-    signOutButton.classList.remove('hidden');
-    submitFeedbackForm.querySelector('button[type="submit"]').disabled = false;
-    submitterAuthMessage.textContent = 'You are signed in. You may submit feedback.';
-  } else {
-    authStatus.textContent = 'Not signed in.';
-    signInButton.classList.remove('hidden');
-    signOutButton.classList.add('hidden');
-    submitFeedbackForm.querySelector('button[type="submit"]').disabled = true;
-    submitterAuthMessage.textContent = 'Please sign in with Entra ID before submitting feedback.';
-  }
-}
-
-async function loadCurrentUser() {
-  try {
-    const data = await fetchJson('/api/user');
-    setAuthState(data.user);
-  } catch (error) {
-    setAuthState(null);
-  }
-}
-
 submitFeedbackForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   submitResult.textContent = '';
-  if (!currentUser) {
-    submitResult.textContent = 'Please sign in before submitting feedback.';
-    return;
-  }
-
   const formData = new FormData(submitFeedbackForm);
 
   try {
     const response = await fetch('/api/feedback', {
       method: 'POST',
-      credentials: 'include',
       body: formData
     });
 
@@ -94,7 +48,7 @@ submitFeedbackForm.addEventListener('submit', async (event) => {
 });
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, { credentials: 'include', ...options });
+  const response = await fetch(url, options);
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.error || response.statusText);
@@ -209,8 +163,7 @@ async function showFeedbackDetail(feedbackId) {
     <div><strong>Short description:</strong> ${feedback.shortDescription}</div>
     <div><strong>Long description:</strong> <pre>${feedback.longDescription}</pre></div>
     <div><strong>Submitter:</strong> ${feedback.submitterName}</div>
-    <div><strong>Submitter email:</strong> ${feedback.submitterEmail || '-'} </div>
-    <div><strong>Submitter object:</strong> ${feedback.submitterObjectId || '-'} </div>
+    <div><strong>Submitter email:</strong> ${feedback.submitterEmail || '-'}</div>
     <div><strong>Status:</strong> ${feedback.status}</div>
     <div><strong>Type:</strong> ${feedback.feedbackType}</div>
     <div><strong>Team ownership:</strong> ${feedback.teamOwner || '-'}</div>
@@ -229,7 +182,7 @@ async function showFeedbackDetail(feedbackId) {
     <div class="detail-panel">
       <h4>Update feedback</h4>
       <form id="feedbackUpdateForm">
-        <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</nselect></label>
+        <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
         <label>Type<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
         <label>Team owner<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
         <label>Action owner<input type="text" name="actionOwner" value="${feedback.actionOwner || ''}" /></label>
@@ -370,7 +323,6 @@ function openActionUpdateDialog(actionId, action) {
   });
 }
 
-loadCurrentUser();
 loadDashboard();
 loadFeedback();
 renderFilterOptions();
