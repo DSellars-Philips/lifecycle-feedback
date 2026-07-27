@@ -429,67 +429,116 @@ async function showFeedbackDetail(feedbackId) {
   const { feedback, actions, history, attachments } = payload;
   feedbackDetail.classList.remove('hidden');
   feedbackDetail.innerHTML = `
-    <h3>Feedback ${feedback.id}</h3>
-    <div><strong>Short description:</strong> ${feedback.shortDescription}</div>
-    <div><strong>Long description:</strong> <pre>${feedback.longDescription}</pre></div>
-    <div><strong>Submitted by:</strong> ${feedback.submitterEmail || feedback.submitterName || '-'}</div>
-    <div><strong>Status:</strong> ${feedback.status}</div>
-    <div><strong>Status:</strong> ${feedback.status}</div>
-    <div><strong>Type:</strong> ${feedback.feedbackType}</div>
-    <div><strong>Team ownership:</strong> ${feedback.teamOwner || '-'}</div>
-    <div><strong>Action owner:</strong> ${feedback.actionOwner || '-'}</div>
-    <div><strong>Product:</strong> ${feedback.productName || '-'}</div>
-    <div><strong>Next action due:</strong> ${feedback.dueDateNextAction || '-'}</div>
-    <div><strong>Completion due:</strong> ${feedback.dueDateCompletion || '-'}</div>
-    <div><strong>Next action summary:</strong> ${feedback.nextActions || '-'}</div>
-    <div><strong>Triage decision:</strong> ${feedback.triageDecision}</div>
-    <div><strong>Triage comment:</strong> ${feedback.triageComment || '-'}</div>
-    <div><strong>Attachments:</strong>
-      <ul class="preview-list">
-        ${attachments.map((attach) => `<li><a href="${attach.url}" target="_blank">${attach.originalName}</a></li>`).join('') || '<li>No attachments</li>'}
-      </ul>
-    </div>
-    <div class="detail-panel">
-      <h4>Update feedback</h4>
-      <form id="feedbackUpdateForm">
-        <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
+    <div class="detail-modal-card">
+      <button class="close-modal" id="closeFeedbackModal">×</button>
+      <h3>Feedback ${feedback.id}</h3>
+      <div class="detail-modal-grid">
+        <div class="detail-modal-section">
+          <div><strong>Short description:</strong> ${feedback.shortDescription}</div>
+          <div><strong>Long description:</strong> <pre>${feedback.longDescription}</pre></div>
+          <div><strong>Submitted by:</strong> ${feedback.submitterEmail || feedback.submitterName || '-'}</div>
+          <div><strong>Type:</strong> ${feedback.feedbackType}</div>
+          <div><strong>Team ownership:</strong> ${feedback.teamOwner || '-'}</div>
+          <div><strong>Action owner:</strong> ${feedback.actionOwner || '-'}</div>
+          <div><strong>Product:</strong> ${feedback.productName || '-'}</div>
+          <div><strong>Next action due:</strong> ${feedback.dueDateNextAction || '-'}</div>
+          <div><strong>Completion due:</strong> ${feedback.dueDateCompletion || '-'}</div>
+          <div><strong>Triage decision:</strong> ${feedback.triageDecision}</div>
+          <div><strong>Triage comment:</strong> ${feedback.triageComment || '-'}</div>
+          <div><strong>Attachments:</strong>
+            <ul class="preview-list">
+              ${attachments.map((attach) => `<li><a href="${attach.url}" target="_blank">${attach.originalName}</a></li>`).join('') || '<li>No attachments</li>'}
+            </ul>
+          </div>
+        </div>
+        <div class="detail-modal-section">
+          <h4>Update feedback</h4>
+          <form id="feedbackUpdateForm">
+            <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
             <label>Type<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
-        <label>Team owner<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
-        <label>Action owner<input type="email" name="actionOwner" value="${feedback.actionOwner || ''}" placeholder="owner@example.com" /></label>
-        <label>Product name<input type="text" name="productName" value="${feedback.productName || ''}" /></label>
-        <label>Next action due<input type="date" name="dueDateNextAction" value="${feedback.dueDateNextAction || ''}" /></label>
-        <label>Completion due<input type="date" name="dueDateCompletion" value="${feedback.dueDateCompletion || ''}" /></label>
-        <label>Next actions<textarea name="nextActions">${feedback.nextActions || ''}</textarea></label>
-        <label>Triage decision<select name="triageDecision"><option value="Pending" ${feedback.triageDecision === 'Pending' ? 'selected' : ''}>Pending</option><option value="Accepted" ${feedback.triageDecision === 'Accepted' ? 'selected' : ''}>Accepted</option><option value="Declined" ${feedback.triageDecision === 'Declined' ? 'selected' : ''}>Declined</option></select></label>
-        <label>Triage comment<textarea name="triageComment">${feedback.triageComment || ''}</textarea></label>
-        <button type="submit">Save updates</button>
-      </form>
-      <h4>Create action plan</h4>
-      <form id="actionAddForm">
-        <label>Action title<input type="text" name="title" required /></label>
-        <label>Details<textarea name="details"></textarea></label>
-        <label>Owner email<input type="email" name="owner" required placeholder="owner@example.com" /></label>
-        <label>Due date<input type="date" name="dueDate" /></label>
-        <label>Status<select name="status"><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Complete">Complete</option></select></label>
-        <button type="submit">Add action</button>
-      </form>
-      <h4>Actions</h4>
-      <ul class="preview-list">
-        ${actions.map((action) => `<li><strong>${action.title}</strong> [${action.status}] assigned to ${action.owner || 'unassigned'} - due ${action.dueDate || 'none'}. Result: ${action.result || 'TBD'}</li>`).join('') || '<li>No actions yet</li>'}
-      </ul>
-      <h4>Review notes</h4>
-      <form id="feedbackNoteForm">
-        <label>Note<textarea name="note" rows="3"></textarea></label>
-        <button type="submit">Add note</button>
-      </form>
-      <h4>History</h4>
-      <ul class="preview-list">
-        ${history.map((entry) => `<li>${new Date(entry.createdAt).toLocaleString()}: <strong>${entry.eventType}</strong> by ${entry.userName || 'unknown'} - ${entry.note}</li>`).join('') || '<li>No history yet</li>'}
-      </ul>
+            <label>Team owner<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
+            <label>Action owner<input type="email" name="actionOwner" value="${feedback.actionOwner || ''}" placeholder="owner@example.com" /></label>
+            <label>Next action due<input type="date" name="dueDateNextAction" value="${feedback.dueDateNextAction || ''}" /></label>
+            <label>Completion due<input type="date" name="dueDateCompletion" value="${feedback.dueDateCompletion || ''}" /></label>
+            <label>Triage decision<select name="triageDecision"><option value="Pending" ${feedback.triageDecision === 'Pending' ? 'selected' : ''}>Pending</option><option value="Accepted" ${feedback.triageDecision === 'Accepted' ? 'selected' : ''}>Accepted</option><option value="Declined" ${feedback.triageDecision === 'Declined' ? 'selected' : ''}>Declined</option></select></label>
+            <label>Triage comment<textarea name="triageComment">${feedback.triageComment || ''}</textarea></label>
+            <button type="submit">Save updates</button>
+          </form>
+          <h4 class="mt-20">Next Actions</h4>
+          <form id="nextActionUpdateForm" class="next-action-update">
+            <label>Add an update<textarea name="nextActionUpdate" placeholder="Enter your update here"></textarea></label>
+            <button type="submit">Add update</button>
+          </form>
+          <div class="next-actions-list" id="nextActionsList">
+            ${feedback.nextActions ? feedback.nextActions.split('\n').map((line) => `<p>${line}</p>`).join('') : '<p>No updates yet</p>'}
+          </div>
+        </div>
+      </div>
+      <div class="detail-modal-section">
+        <h4>Actions</h4>
+        <ul class="preview-list">
+          ${actions.map((action) => `<li><strong>${action.title}</strong> [${action.status}] assigned to ${action.owner || 'unassigned'} - due ${action.dueDate || 'none'}. Result: ${action.result || 'TBD'}</li>`).join('') || '<li>No actions yet</li>'}
+        </ul>
+      </div>
+      <div class="detail-modal-section">
+        <h4>History</h4>
+        <ul class="preview-list">
+          ${history.map((entry) => `<li>${new Date(entry.createdAt).toLocaleString()}: <strong>${entry.eventType}</strong> by ${entry.userName || 'unknown'} - ${entry.note}</li>`).join('') || '<li>No history yet</li>'}
+        </ul>
+      </div>
     </div>
   `;
 
+  const closeModalButton = document.getElementById('closeFeedbackModal');
+  closeModalButton.addEventListener('click', () => {
+    feedbackDetail.classList.add('hidden');
+  });
+
+  feedbackDetail.addEventListener('click', (event) => {
+    if (event.target === feedbackDetail) {
+      feedbackDetail.classList.add('hidden');
+    }
+  });
+
   const updateForm = document.getElementById('feedbackUpdateForm');
+  const nextActionUpdateForm = document.getElementById('nextActionUpdateForm');
+  const nextActionsList = document.getElementById('nextActionsList');
+
+  updateForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(updateForm).entries());
+    data.userEmail = currentUserEmail;
+    await fetchJson(`/api/feedback/${feedback.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    await loadDashboard();
+    await loadFeedback();
+    showFeedbackDetail(feedback.id);
+  });
+
+  nextActionUpdateForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const updateText = nextActionUpdateForm.nextActionUpdate.value.trim();
+    if (!updateText) {
+      return;
+    }
+
+    const metadata = `${new Date().toLocaleString()} by ${currentUserEmail}`;
+    const newLine = `${metadata} — ${updateText}`;
+    const updatedNextActions = [newLine, ...(feedback.nextActions ? feedback.nextActions.split('\n') : [])].join('\n');
+
+    await fetchJson(`/api/feedback/${feedback.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nextActions: updatedNextActions, userEmail: currentUserEmail })
+    });
+
+    nextActionsList.innerHTML = updatedNextActions.split('\n').map((line) => `<p>${line}</p>`).join('');
+    nextActionUpdateForm.reset();
+  });
+
   const actionAddForm = document.getElementById('actionAddForm');
 
   updateForm.addEventListener('submit', async (event) => {

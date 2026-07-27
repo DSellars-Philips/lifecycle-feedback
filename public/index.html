@@ -40,8 +40,7 @@
     <section id="submitterSection" class="panel hidden">
       <h2>Submit Feedback</h2>
       <form id="submitFeedbackForm">
-        <label>Short description<input type="text" name="shortDescription" required /></label>
-        <label>Long description<textarea name="longDescription" rows="5" required></textarea></label>
+        <label>Description<textarea name="longDescription" rows="5" required placeholder="Describe the feedback or issue in detail"></textarea></label>
         <label>Feedback type<select name="feedbackType">
           <option value="Tooling">Tooling</option>
           <option value="Product">Product</option>
@@ -80,7 +79,7 @@
           <div class="item-focus-note">Use the table or kanban boards below to take action on feedback items quickly. Status changes, owner assignments, and due dates update in real time.</div>
           <div id="managerListView" class="table-wrapper"></div>
           <div id="managerKanbanView" class="kanban-board hidden"></div>
-          <div id="feedbackDetail" class="detail-panel hidden"></div>
+          <div id="feedbackDetail" class="detail-modal hidden"></div>
         </div>
         <div id="managerReportingPane" class="hidden">
           <div class="reporting-header">

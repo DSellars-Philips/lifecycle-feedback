@@ -33,6 +33,13 @@ function normalizeEmail(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : value;
 }
 
+function deriveShortDescription(longDescription) {
+  if (!longDescription || typeof longDescription !== 'string') return 'Feedback item';
+  const summary = longDescription.trim().replace(/\s+/g, ' ');
+  if (summary.length <= 100) return summary;
+  return `${summary.slice(0, 97).trim()}...`;
+}
+
 async function ensureColumnExists(table, column, definition) {
   const row = await db.get(`SELECT name FROM pragma_table_info('${table}') WHERE name = ?`, column);
   if (!row) {
@@ -131,7 +138,6 @@ app.get('/api/feedback/:id', async (req, res) => {
 
 app.post('/api/feedback', upload.array('attachments', 6), async (req, res) => {
   const {
-    shortDescription,
     longDescription,
     submitterName,
     submitterEmail,
@@ -141,6 +147,7 @@ app.post('/api/feedback', upload.array('attachments', 6), async (req, res) => {
 
   const normalizedSubmitterEmail = normalizeEmail(submitterEmail);
   const normalizedSubmitterName = normalizeEmail(submitterName) || normalizedSubmitterEmail || 'anonymous';
+  const shortDescription = deriveShortDescription(longDescription);
   const timestamp = now();
   const result = await db.run(
     `INSERT INTO feedback (shortDescription, longDescription, submitterName, submitterEmail, feedbackType, productName, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
