@@ -34,7 +34,7 @@ function normalizeEmail(value) {
 }
 
 async function ensureColumnExists(table, column, definition) {
-  const row = await db.get(`PRAGMA table_info(${table}) WHERE name = ?`, column);
+  const row = await db.get(`SELECT name FROM pragma_table_info('${table}') WHERE name = ?`, column);
   if (!row) {
     await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
