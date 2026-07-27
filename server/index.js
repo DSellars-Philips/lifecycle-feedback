@@ -184,6 +184,19 @@ app.post('/api/users', async (req, res) => {
   res.status(existing ? 200 : 201).json(user);
 });
 
+app.get('/api/owners', async (req, res) => {
+  const rows = await db.all(`
+    SELECT DISTINCT owner_email FROM (
+      SELECT LOWER(owner) AS owner_email FROM actions WHERE owner IS NOT NULL AND owner != ''
+      UNION
+      SELECT LOWER(actionOwner) AS owner_email FROM feedback WHERE actionOwner IS NOT NULL AND actionOwner != ''
+      UNION
+      SELECT LOWER(email) AS owner_email FROM users
+    ) WHERE owner_email IS NOT NULL AND owner_email != '' ORDER BY owner_email
+  `);
+  res.json(rows.map(r => r.owner_email));
+});
+
 app.get('/api/feedback', async (req, res) => {
   const items = await db.all(`SELECT * FROM feedback ORDER BY createdAt DESC`);
   res.json(items);

@@ -14,6 +14,7 @@
       <div id="currentUserInfo" class="user-info hidden">
         Logged in as <strong id="currentUserEmail"></strong>
         <button id="changeUserEmail" type="button">Change</button>
+        <button id="adminConsoleButton" type="button" style="margin-left:12px;">Admin</button>
       </div>
     </header>
 
@@ -105,10 +106,19 @@
 
     <section id="ownerSection" class="panel hidden">
       <h2>Action Owner Workspace</h2>
-      <label>Action owner email<input type="email" id="ownerEmail" placeholder="owner@example.com" /></label>
-      <button id="loadOwnerActions">Load My Actions</button>
+      <label>Filter by action owner<select id="ownerFilterSelect"></select></label>
+      <button id="loadOwnerActions">Load Actions</button>
       <div id="ownerActions"></div>
     </section>
+
+    <div id="adminConsole" class="modal hidden">
+      <div class="modal-content">
+        <h2>Admin - User management</h2>
+        <div id="adminMessage" class="notice"></div>
+        <div id="adminUserList"></div>
+        <button id="closeAdminConsole" type="button">Close</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

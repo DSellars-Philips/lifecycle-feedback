@@ -26,9 +26,14 @@ const statusFilter = document.getElementById('statusFilter');
 const feedbackDetail = document.getElementById('feedbackDetail');
 const viewSwitchButtons = document.querySelectorAll('.view-switch button');
 const paneSwitchButtons = document.querySelectorAll('.pane-switch button');
-const ownerEmailInput = document.getElementById('ownerEmail');
+const ownerFilterSelect = document.getElementById('ownerFilterSelect');
 const loadOwnerActions = document.getElementById('loadOwnerActions');
 const ownerActions = document.getElementById('ownerActions');
+const adminConsole = document.getElementById('adminConsole');
+const adminConsoleButton = document.getElementById('adminConsoleButton');
+const closeAdminConsole = document.getElementById('closeAdminConsole');
+const adminUserList = document.getElementById('adminUserList');
+const adminMessage = document.getElementById('adminMessage');
 let currentUserEmail = '';
 let feedbackItems = [];
 let managerViewMode = 'table';
@@ -51,6 +56,7 @@ function setCurrentUserEmail(email) {
   showRole(roleSelect.value);
   loadDashboard();
   loadFeedback();
+  populateOwnerFilter();
 }
 
 function clearCurrentUserEmail() {
@@ -86,6 +92,18 @@ async function loadCurrentUser() {
 }
 
 roleSelect.addEventListener('change', () => showRole(roleSelect.value));
+
+roleSelect.addEventListener('change', () => {
+  if (roleSelect.value === 'owner') {
+    // default owner filter to current user when switching to owner
+    setTimeout(() => {
+      if (currentUserEmail) {
+        if (ownerFilterSelect) ownerFilterSelect.value = currentUserEmail;
+        loadOwnerActionsList();
+      }
+    }, 50);
+  }
+});
 
 userEmailForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -476,7 +494,7 @@ async function showFeedbackDetail(feedbackId) {
       <div class="detail-modal-grid">
         <div class="detail-modal-section">
           <form id="feedbackUpdateForm">
-            <label>Description<textarea disabled rows="5">${feedback.longDescription || ''}</textarea></label>
+            <label>Description<textarea name="longDescription" rows="5">${feedback.longDescription || ''}</textarea></label>
             <label>Feedback Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
             <label>Type of Feedback<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
             <label>Team owning the feedback item's execution<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
@@ -637,9 +655,9 @@ async function showFeedbackDetail(feedbackId) {
 }
 
 async function loadOwnerActionsList() {
-  const ownerEmail = ownerEmailInput.value.trim().toLowerCase();
+  const ownerEmail = ownerFilterSelect && ownerFilterSelect.value ? ownerFilterSelect.value.trim().toLowerCase() : '';
   if (!ownerEmail) {
-    ownerActions.innerHTML = '<p>Please enter an owner email to see assigned actions.</p>';
+    ownerActions.innerHTML = '<p>Please select an action owner to see assigned actions.</p>';
     return;
   }
 
@@ -676,6 +694,101 @@ async function loadOwnerActionsList() {
 
   ownerActions.querySelectorAll('button[data-action-id]').forEach((button) => {
     button.addEventListener('click', () => openActionUpdateDialog(button.dataset.actionId, actions.find((item) => item.id === Number(button.dataset.actionId))));
+  });
+}
+
+async function populateOwnerFilter() {
+  if (!ownerFilterSelect) return;
+  try {
+    const owners = await fetchJson('/api/owners');
+    ownerFilterSelect.innerHTML = '';
+    // ensure current user appears first if present
+    const unique = [...new Set(owners)];
+    unique.sort((a, b) => a.localeCompare(b));
+    unique.forEach((email) => {
+      const opt = document.createElement('option');
+      opt.value = email;
+      opt.textContent = email;
+      ownerFilterSelect.appendChild(opt);
+    });
+    if (currentUserEmail) {
+      // if current user not in list, add it
+      if (!unique.includes(currentUserEmail)) {
+        const myOpt = document.createElement('option');
+        myOpt.value = currentUserEmail;
+        myOpt.textContent = currentUserEmail;
+        ownerFilterSelect.prepend(myOpt);
+      }
+      ownerFilterSelect.value = currentUserEmail;
+    }
+  } catch (err) {
+    console.error('Unable to load owners list', err);
+  }
+}
+
+adminConsoleButton && adminConsoleButton.addEventListener('click', openAdminConsole);
+closeAdminConsole && closeAdminConsole.addEventListener('click', () => {
+  adminConsole.classList.add('hidden');
+});
+
+async function openAdminConsole() {
+  adminMessage.textContent = '';
+  adminConsole.classList.remove('hidden');
+  await loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  try {
+    const users = await fetchJson('/api/users');
+    renderAdminUsers(users);
+  } catch (err) {
+    adminMessage.textContent = `Failed to load users: ${err.message}`;
+  }
+}
+
+function renderAdminUsers(users) {
+  adminUserList.innerHTML = '';
+  if (!users || !users.length) {
+    adminUserList.innerHTML = '<p>No users found.</p>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'table-wrapper';
+  table.innerHTML = `<thead><tr><th>Email</th><th>First</th><th>Last</th><th>Group</th><th>Actions</th></tr></thead>`;
+  const body = document.createElement('tbody');
+  users.forEach((u) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${u.email}</td>
+      <td><input data-email="${u.email}" data-field="firstName" value="${u.firstName || ''}" /></td>
+      <td><input data-email="${u.email}" data-field="lastName" value="${u.lastName || ''}" /></td>
+      <td><input data-email="${u.email}" data-field="groupName" value="${u.groupName || ''}" /></td>
+      <td><button data-email="${u.email}" class="save-user">Save</button></td>
+    `;
+    body.appendChild(tr);
+  });
+  table.appendChild(body);
+  adminUserList.appendChild(table);
+
+  adminUserList.querySelectorAll('.save-user').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      const email = btn.dataset.email;
+      const first = adminUserList.querySelector(`input[data-email="${email}"][data-field="firstName"]`).value.trim();
+      const last = adminUserList.querySelector(`input[data-email="${email}"][data-field="lastName"]`).value.trim();
+      const group = adminUserList.querySelector(`input[data-email="${email}"][data-field="groupName"]`).value.trim();
+      try {
+        await fetchJson('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, firstName: first, lastName: last, groupName: group })
+        });
+        adminMessage.textContent = 'User saved.';
+        await populateOwnerFilter();
+      } catch (err) {
+        adminMessage.textContent = `Save failed: ${err.message}`;
+      }
+    });
   });
 }
 
@@ -719,3 +832,4 @@ loadCurrentUser();
 renderFilterOptions();
 showRole(roleSelect.value);
 loadOwnerActions.addEventListener('click', loadOwnerActionsList);
+if (ownerFilterSelect) ownerFilterSelect.addEventListener('change', loadOwnerActionsList);
