@@ -17,14 +17,16 @@
       </div>
     </header>
 
-    <section id="userEmailPrompt" class="panel">
-      <h2>Enter your email</h2>
-      <form id="userEmailForm">
-        <label>Email<input type="email" id="userEmailInput" placeholder="you@example.com" required /></label>
-        <button type="submit">Continue</button>
-      </form>
-      <div id="userEmailMessage" class="notice"></div>
-    </section>
+    <div id="userEmailModal" class="modal">
+      <div class="modal-content">
+        <h2>Enter your email</h2>
+        <form id="userEmailForm">
+          <label>Email<input type="email" id="userEmailInput" placeholder="you@example.com" required /></label>
+          <button type="submit">Continue</button>
+        </form>
+        <div id="userEmailMessage" class="notice"></div>
+      </div>
+    </div>
 
     <section class="role-selector hidden">
       <label for="roleSelect">Select your role</label>
@@ -54,13 +56,49 @@
     </section>
 
     <section id="managerSection" class="panel hidden">
-      <h2>Manager Dashboard</h2>
-      <div class="dashboard-cards" id="dashboardCards"></div>
-      <div class="table-toolbar">
-        <label>Filter status<select id="statusFilter"><option value="all">All</option></select></label>
+      <div class="manager-header">
+        <div>
+          <h2>Manager Workspace</h2>
+          <p class="section-description">Interact directly with feedback items—accept, decline, categorize, assign owners, and manage due dates.</p>
+        </div>
+        <div class="manager-controls">
+          <div class="pane-switch" role="tablist">
+            <button type="button" data-pane="items" class="active" role="tab">Items</button>
+            <button type="button" data-pane="reporting" role="tab">Reporting</button>
+          </div>
+          <div class="view-switch" role="tablist">
+            <button type="button" data-view="table" class="active" role="tab">Table view</button>
+            <button type="button" data-view="kanban" role="tab">Kanban view</button>
+          </div>
+          <div class="status-filter">
+            <label>Filter status<select id="statusFilter"><option value="all">All</option></select></label>
+          </div>
+        </div>
       </div>
-      <div id="managerTable"></div>
-      <div id="feedbackDetail" class="detail-panel hidden"></div>
+      <div class="manager-panes">
+        <div id="managerItemsPane">
+          <div class="item-focus-note">Use the table or kanban boards below to take action on feedback items quickly. Status changes, owner assignments, and due dates update in real time.</div>
+          <div id="managerListView" class="table-wrapper"></div>
+          <div id="managerKanbanView" class="kanban-board hidden"></div>
+          <div id="feedbackDetail" class="detail-panel hidden"></div>
+        </div>
+        <div id="managerReportingPane" class="hidden">
+          <div class="reporting-header">
+            <h3>Reporting</h3>
+            <p>Visualize status, ownership, and due date summaries for the feedback pipeline.</p>
+          </div>
+          <div class="dashboard-cards" id="dashboardCards"></div>
+          <div class="report-chart-panel">
+            <div class="report-chart">
+              <canvas id="statusChart"></canvas>
+            </div>
+            <div class="report-chart">
+              <canvas id="dueDateChart"></canvas>
+            </div>
+          </div>
+          <div class="report-summary" id="reportSummary"></div>
+        </div>
+      </div>
     </section>
 
     <section id="ownerSection" class="panel hidden">
@@ -71,6 +109,7 @@
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

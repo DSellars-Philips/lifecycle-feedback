@@ -5,6 +5,28 @@ body {
   color: #1f2937;
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  width: min(420px, calc(100% - 32px));
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.18);
+}
+
 .container {
   max-width: 1100px;
   margin: 0 auto;
@@ -104,6 +126,283 @@ button:hover {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 16px;
+}
+
+.manager-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.manager-header h2 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.section-description {
+  margin: 8px 0 0;
+  color: #4b5563;
+  max-width: 70ch;
+}
+
+.manager-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.pane-switch,
+.view-switch {
+  display: inline-flex;
+  gap: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 999px;
+  padding: 6px;
+}
+
+.pane-switch button,
+.view-switch button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #1f2937;
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.pane-switch button.active,
+.view-switch button.active,
+.pane-switch button:hover,
+.view-switch button:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.status-filter select {
+  min-width: 180px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  padding: 10px 14px;
+  background: white;
+}
+
+.manager-panes {
+  display: grid;
+  gap: 20px;
+}
+
+.item-focus-note {
+  padding: 16px;
+  background: #eef2ff;
+  border-radius: 16px;
+  color: #4338ca;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.reporting-header {
+  margin-bottom: 20px;
+}
+
+.report-chart-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.report-chart {
+  min-height: 280px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 20px;
+}
+
+.report-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.report-summary .card {
+  background: #f8fafc;
+}
+
+.kanban-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: 24px;
+}
+
+.view-switch button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: transparent;
+  color: #1f2937;
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.view-switch button.active,
+.view-switch button:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.status-filter select {
+  min-width: 180px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  padding: 10px 14px;
+  background: white;
+}
+
+.table-wrapper {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.table-wrapper table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.table-wrapper th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+}
+
+.table-wrapper tr:hover {
+  background: #f8fafc;
+}
+
+.kanban-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: 24px;
+}
+
+.kanban-column {
+  background: #f8fafc;
+  border-radius: 20px;
+  min-height: 280px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kanban-column h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.kanban-card {
+  background: white;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+}
+
+.kanban-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.kanban-card-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.tag {
+  padding: 4px 10px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.card-meta {
+  display: grid;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.inline-field {
+  display: grid;
+  gap: 8px;
+}
+
+.inline-field input,
+.inline-field select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.card-actions button {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.detail-panel {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.detail-panel.hidden {
+  display: none;
+}
+
+.detail-panel h3 {
+  margin-top: 0;
+}
+
+.detail-panel p {
+  color: #4b5563;
 }
 
 .card h3 {

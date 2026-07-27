@@ -1,7 +1,7 @@
 const currentUserInfo = document.getElementById('currentUserInfo');
 const currentUserEmailEl = document.getElementById('currentUserEmail');
 const changeUserEmail = document.getElementById('changeUserEmail');
-const userEmailPrompt = document.getElementById('userEmailPrompt');
+const userEmailModal = document.getElementById('userEmailModal');
 const userEmailForm = document.getElementById('userEmailForm');
 const userEmailInput = document.getElementById('userEmailInput');
 const userEmailMessage = document.getElementById('userEmailMessage');
@@ -13,14 +13,24 @@ const ownerSection = document.getElementById('ownerSection');
 const submitFeedbackForm = document.getElementById('submitFeedbackForm');
 const submitResult = document.getElementById('submitResult');
 const dashboardCards = document.getElementById('dashboardCards');
-const managerTable = document.getElementById('managerTable');
+const managerListView = document.getElementById('managerListView');
+const managerKanbanView = document.getElementById('managerKanbanView');
+const managerItemsPane = document.getElementById('managerItemsPane');
+const managerReportingPane = document.getElementById('managerReportingPane');
+const statusChartCanvas = document.getElementById('statusChart');
+const dueDateChartCanvas = document.getElementById('dueDateChart');
+const reportSummary = document.getElementById('reportSummary');
 const statusFilter = document.getElementById('statusFilter');
 const feedbackDetail = document.getElementById('feedbackDetail');
+const viewSwitchButtons = document.querySelectorAll('.view-switch button');
+const paneSwitchButtons = document.querySelectorAll('.pane-switch button');
 const ownerEmailInput = document.getElementById('ownerEmail');
 const loadOwnerActions = document.getElementById('loadOwnerActions');
 const ownerActions = document.getElementById('ownerActions');
 let currentUserEmail = '';
 let feedbackItems = [];
+let managerViewMode = 'table';
+let managerPane = 'items';
 let statusValues = ['New', 'Accepted', 'In Progress', 'Complete', 'Declined'];
 
 function showRole(role) {
@@ -34,7 +44,7 @@ function setCurrentUserEmail(email) {
   localStorage.setItem('currentUserEmail', email);
   currentUserEmailEl.textContent = email;
   currentUserInfo.classList.remove('hidden');
-  userEmailPrompt.classList.add('hidden');
+  userEmailModal.classList.add('hidden');
   roleSelectorSection.classList.remove('hidden');
   showRole(roleSelect.value);
   loadDashboard();
@@ -50,7 +60,7 @@ function clearCurrentUserEmail() {
   submitterSection.classList.add('hidden');
   managerSection.classList.add('hidden');
   ownerSection.classList.add('hidden');
-  userEmailPrompt.classList.remove('hidden');
+  userEmailModal.classList.remove('hidden');
 }
 
 function loadCurrentUser() {
@@ -153,12 +163,95 @@ async function loadDashboard() {
   renderDashboard(data);
 }
 
+let statusChartInstance = null;
+let dueDateChartInstance = null;
+
+function renderReportingPanels() {
+  if (!feedbackItems.length) {
+    reportSummary.innerHTML = '<p>No feedback data available for reporting.</p>';
+    if (statusChartInstance) {
+      statusChartInstance.destroy();
+      statusChartInstance = null;
+    }
+    if (dueDateChartInstance) {
+      dueDateChartInstance.destroy();
+      dueDateChartInstance = null;
+    }
+    return;
+  }
+
+  const statusCounts = statusValues.map((status) => feedbackItems.filter((item) => item.status === status).length);
+  const dueSoon = feedbackItems.filter((item) => {
+    return item.dueDateNextAction && new Date(item.dueDateNextAction) <= new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  }).length;
+  const overdue = feedbackItems.filter((item) => {
+    return item.dueDateNextAction && new Date(item.dueDateNextAction) < new Date();
+  }).length;
+  const withoutDueDate = feedbackItems.filter((item) => !item.dueDateNextAction).length;
+  const ownerGroups = [...new Set(feedbackItems.filter((item) => item.actionOwner).map((item) => item.actionOwner))].length;
+
+  if (statusChartInstance) {
+    statusChartInstance.destroy();
+  }
+  statusChartInstance = new Chart(statusChartCanvas, {
+    type: 'doughnut',
+    data: {
+      labels: statusValues,
+      datasets: [{
+        data: statusCounts,
+        backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#6366f1', '#ef4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: (context) => `${context.label}: ${context.parsed}` } }
+      },
+      maintainAspectRatio: false
+    }
+  });
+
+  if (dueDateChartInstance) {
+    dueDateChartInstance.destroy();
+  }
+  dueDateChartInstance = new Chart(dueDateChartCanvas, {
+    type: 'bar',
+    data: {
+      labels: ['Overdue', 'Due Soon', 'Without Due Date'],
+      datasets: [{
+        label: 'Feedback count',
+        data: [overdue, dueSoon, withoutDueDate],
+        backgroundColor: ['#dc2626', '#f59e0b', '#6b7280']
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      },
+      maintainAspectRatio: false
+    }
+  });
+
+  reportSummary.innerHTML = `
+    <div class="card"><h4>Unassigned items</h4><p>${unassigned} feedback items need an owner.</p></div>
+    <div class="card"><h4>Open actions</h4><p>${feedbackItems.filter((item) => item.status === 'Accepted' || item.status === 'In Progress').length} are actively being worked.</p></div>
+    <div class="card"><h4>Action owner distribution</h4><p>${ownerGroups} distinct owners assigned.</p></div>
+  `;
+}
+
 function renderFilterOptions() {
   statusFilter.innerHTML = '<option value="all">All</option>' + statusValues.map((status) => `<option value="${status}">${status}</option>`).join('');
 }
 
 function renderManagerTable(items) {
-  managerTable.innerHTML = '';
+  managerListView.innerHTML = '';
   const wrapper = document.createElement('div');
   wrapper.className = 'table-wrapper';
   const table = document.createElement('table');
@@ -185,34 +278,151 @@ function renderManagerTable(items) {
       <td class="truncate" title="${item.shortDescription}">${item.shortDescription}</td>
       <td>${item.status}</td>
       <td>${item.feedbackType}</td>
-      <td>${item.teamOwner}</td>
-      <td>${item.actionOwner}</td>
+      <td>${item.teamOwner || '-'}</td>
+      <td>${item.actionOwner || '-'}</td>
       <td>${item.dueDateNextAction || '-'}</td>
-      <td><button data-id="${item.id}">View</button></td>
+      <td><button data-id="${item.id}">Open</button></td>
     `;
     body.appendChild(row);
   });
 
   table.appendChild(body);
   wrapper.appendChild(table);
-  managerTable.appendChild(wrapper);
-  managerTable.querySelectorAll('button[data-id]').forEach((button) => {
+  managerListView.appendChild(wrapper);
+  managerListView.querySelectorAll('button[data-id]').forEach((button) => {
     button.addEventListener('click', () => showFeedbackDetail(button.dataset.id));
   });
 }
 
+function renderKanbanBoard(items) {
+  managerKanbanView.innerHTML = '';
+  const statuses = ['New', 'Accepted', 'In Progress', 'Complete', 'Declined'];
+
+  statuses.forEach((status) => {
+    const column = document.createElement('div');
+    column.className = 'kanban-column';
+    column.innerHTML = `<h3>${status}</h3>`;
+    const columnItems = items.filter((item) => item.status === status);
+
+    if (!columnItems.length) {
+      const emptyState = document.createElement('p');
+      emptyState.textContent = 'No items in this column yet.';
+      emptyState.style.color = '#6b7280';
+      column.appendChild(emptyState);
+    }
+
+    columnItems.forEach((item) => column.appendChild(createKanbanCard(item)));
+    managerKanbanView.appendChild(column);
+  });
+}
+
+function createKanbanCard(item) {
+  const card = document.createElement('div');
+  card.className = 'kanban-card';
+  card.dataset.feedbackId = item.id;
+  card.innerHTML = `
+    <div class="kanban-card-header">
+      <h4>${item.shortDescription}</h4>
+      <span class="tag">${item.feedbackType || 'Feedback'}</span>
+    </div>
+    <div class="card-meta">
+      <div><strong>ID:</strong> ${item.id}</div>
+      <div><strong>Team:</strong> ${item.teamOwner || 'Unassigned'}</div>
+      <div><strong>Owner:</strong> ${item.actionOwner || 'Unassigned'}</div>
+      <div><strong>Due:</strong> ${item.dueDateNextAction || 'None'}</div>
+    </div>
+    <div class="inline-field">
+      <label>Status<select data-id="${item.id}" class="card-status-select">
+        ${statusValues.map((status) => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+      </select></label>
+    </div>
+    <div class="inline-field">
+      <label>Owner email<input type="email" value="${item.actionOwner || ''}" data-id="${item.id}" class="card-owner-input" placeholder="owner@example.com" /></label>
+    </div>
+    <div class="card-actions">
+      <button type="button" class="card-detail-button" data-id="${item.id}">Details</button>
+    </div>
+  `;
+
+  const statusSelect = card.querySelector('.card-status-select');
+  const ownerInput = card.querySelector('.card-owner-input');
+  const detailsButton = card.querySelector('.card-detail-button');
+
+  statusSelect.addEventListener('change', async () => {
+    await updateFeedbackField(item.id, { status: statusSelect.value });
+  });
+
+  ownerInput.addEventListener('change', async () => {
+    await updateFeedbackField(item.id, { actionOwner: ownerInput.value.trim() });
+  });
+
+  detailsButton.addEventListener('click', () => showFeedbackDetail(item.id));
+  return card;
+}
+
+async function updateFeedbackField(feedbackId, updates) {
+  try {
+    await fetchJson(`/api/feedback/${feedbackId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...updates, userEmail: currentUserEmail })
+    });
+    await loadDashboard();
+    await loadFeedback();
+  } catch (error) {
+    console.error('Unable to update feedback:', error);
+  }
+}
+
+function setManagerViewMode(mode) {
+  managerViewMode = mode;
+  viewSwitchButtons.forEach((button) => {
+    button.classList.toggle('active', button.dataset.view === mode);
+  });
+  managerListView.classList.toggle('hidden', mode !== 'table');
+  managerKanbanView.classList.toggle('hidden', mode !== 'kanban');
+  applyStatusFilter();
+}
+
+function setManagerPane(pane) {
+  managerPane = pane;
+  paneSwitchButtons.forEach((button) => {
+    button.classList.toggle('active', button.dataset.pane === pane);
+  });
+  managerItemsPane.classList.toggle('hidden', pane !== 'items');
+  managerReportingPane.classList.toggle('hidden', pane !== 'reporting');
+  if (pane === 'reporting') {
+    renderReportingPanels();
+  }
+}
+
 async function loadFeedback() {
   feedbackItems = await fetchJson('/api/feedback');
-  renderManagerTable(feedbackItems);
+  applyStatusFilter();
 }
 
 function applyStatusFilter() {
   const filter = statusFilter.value;
   const items = filter === 'all' ? feedbackItems : feedbackItems.filter((item) => item.status === filter);
   renderManagerTable(items);
+  renderKanbanBoard(items);
+  if (managerPane === 'reporting') {
+    renderReportingPanels();
+  }
 }
 
 statusFilter.addEventListener('change', applyStatusFilter);
+
+viewSwitchButtons.forEach((button) => {
+  button.addEventListener('click', () => setManagerViewMode(button.dataset.view));
+});
+
+paneSwitchButtons.forEach((button) => {
+  button.addEventListener('click', () => setManagerPane(button.dataset.pane));
+});
+
+setManagerViewMode(managerViewMode);
+setManagerPane(managerPane);
 
 async function showFeedbackDetail(feedbackId) {
   const payload = await fetchJson(`/api/feedback/${feedbackId}`);
