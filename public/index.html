@@ -19,9 +19,12 @@
 
     <div id="userEmailModal" class="modal">
       <div class="modal-content">
-        <h2>Enter your email</h2>
+        <h2>Enter your information</h2>
+        <p>First-time users must enter an email, first name, and last name. Returning users can enter only their email.</p>
         <form id="userEmailForm">
           <label>Email<input type="email" id="userEmailInput" placeholder="you@example.com" required /></label>
+          <label>First name<input type="text" id="userFirstNameInput" placeholder="First" /></label>
+          <label>Last name<input type="text" id="userLastNameInput" placeholder="Last" /></label>
           <button type="submit">Continue</button>
         </form>
         <div id="userEmailMessage" class="notice"></div>

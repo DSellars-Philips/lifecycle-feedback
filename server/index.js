@@ -113,6 +113,17 @@ async function initDatabase() {
       FOREIGN KEY(feedbackId) REFERENCES feedback(id) ON DELETE CASCADE
     );
   `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      email TEXT PRIMARY KEY,
+      firstName TEXT NOT NULL,
+      lastName TEXT NOT NULL,
+      groupName TEXT DEFAULT '',
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+  `);
 }
 
 await initDatabase();
@@ -121,6 +132,57 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(UPLOAD_DIR));
+
+app.get('/api/users', async (req, res) => {
+  const users = await db.all(`SELECT * FROM users ORDER BY lastName, firstName`);
+  res.json(users);
+});
+
+app.get('/api/users/:email', async (req, res) => {
+  const email = normalizeEmail(req.params.email);
+  const user = await db.get(`SELECT * FROM users WHERE email = ?`, email);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
+});
+
+app.post('/api/users', async (req, res) => {
+  const { email, firstName, lastName, groupName } = req.body;
+  if (!email || !firstName || !lastName) {
+    return res.status(400).json({ error: 'Email, first name, and last name are required' });
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedFirstName = firstName.trim();
+  const normalizedLastName = lastName.trim();
+  const normalizedGroupName = typeof groupName === 'string' ? groupName.trim() : '';
+  const timestamp = now();
+
+  const existing = await db.get(`SELECT * FROM users WHERE email = ?`, normalizedEmail);
+  if (existing) {
+    await db.run(`
+      UPDATE users SET firstName = ?, lastName = ?, groupName = ?, updatedAt = ? WHERE email = ?
+    `,
+    normalizedFirstName,
+    normalizedLastName,
+    normalizedGroupName,
+    timestamp,
+    normalizedEmail);
+  } else {
+    await db.run(`
+      INSERT INTO users (email, firstName, lastName, groupName, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    normalizedEmail,
+    normalizedFirstName,
+    normalizedLastName,
+    normalizedGroupName,
+    timestamp,
+    timestamp);
+  }
+
+  const user = await db.get(`SELECT * FROM users WHERE email = ?`, normalizedEmail);
+  res.status(existing ? 200 : 201).json(user);
+});
 
 app.get('/api/feedback', async (req, res) => {
   const items = await db.all(`SELECT * FROM feedback ORDER BY createdAt DESC`);

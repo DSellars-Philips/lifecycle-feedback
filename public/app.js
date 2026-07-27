@@ -4,6 +4,8 @@ const changeUserEmail = document.getElementById('changeUserEmail');
 const userEmailModal = document.getElementById('userEmailModal');
 const userEmailForm = document.getElementById('userEmailForm');
 const userEmailInput = document.getElementById('userEmailInput');
+const userFirstNameInput = document.getElementById('userFirstNameInput');
+const userLastNameInput = document.getElementById('userLastNameInput');
 const userEmailMessage = document.getElementById('userEmailMessage');
 const roleSelectorSection = document.querySelector('.role-selector');
 const roleSelect = document.getElementById('roleSelect');
@@ -63,27 +65,65 @@ function clearCurrentUserEmail() {
   userEmailModal.classList.remove('hidden');
 }
 
-function loadCurrentUser() {
+async function loadCurrentUser() {
   const savedEmail = localStorage.getItem('currentUserEmail');
-  if (savedEmail) {
-    setCurrentUserEmail(savedEmail);
-  } else {
+  if (!savedEmail) {
     clearCurrentUserEmail();
+    return;
   }
+
+  try {
+    const existingUser = await fetchJson(`/api/users/${encodeURIComponent(savedEmail)}`);
+    if (existingUser && existingUser.email) {
+      setCurrentUserEmail(savedEmail);
+      return;
+    }
+  } catch (error) {
+    // ignore and force re-login
+  }
+
+  clearCurrentUserEmail();
 }
 
 roleSelect.addEventListener('change', () => showRole(roleSelect.value));
 
-userEmailForm.addEventListener('submit', (event) => {
+userEmailForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  userEmailMessage.textContent = '';
   const email = userEmailInput.value.trim().toLowerCase();
+  const firstName = userFirstNameInput.value.trim();
+  const lastName = userLastNameInput.value.trim();
+
   if (!email) {
     userEmailMessage.textContent = 'Please enter a valid email address.';
     return;
   }
 
-  userEmailMessage.textContent = '';
-  setCurrentUserEmail(email);
+  try {
+    const existingUser = await fetchJson(`/api/users/${encodeURIComponent(email)}`);
+    if (existingUser && existingUser.email) {
+      setCurrentUserEmail(email);
+      return;
+    }
+  } catch (error) {
+    // user does not exist yet
+  }
+
+  if (!firstName || !lastName) {
+    userEmailMessage.textContent = 'First and last name are required for first-time users.';
+    return;
+  }
+
+  try {
+    await fetchJson('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, firstName, lastName })
+    });
+    setCurrentUserEmail(email);
+  } catch (error) {
+    userEmailMessage.textContent = `Error saving user: ${error.message}`;
+  }
 });
 
 changeUserEmail.addEventListener('click', () => {
