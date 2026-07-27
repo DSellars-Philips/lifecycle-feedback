@@ -302,8 +302,80 @@ function renderReportingPanels() {
     <div class="card"><h4>Unassigned items</h4><p>${unassigned} feedback items need an owner.</p></div>
     <div class="card"><h4>Open actions</h4><p>${feedbackItems.filter((item) => item.status === 'Accepted' || item.status === 'In Progress').length} are actively being worked.</p></div>
     <div class="card"><h4>Action owner distribution</h4><p>${ownerGroups} distinct owners assigned.</p></div>
+    <div class="card"><h4>Progress overview</h4><div id="progressOverview"></div></div>
+    <div class="card"><h4>Gantt view</h4><div id="ganttOverview"></div></div>
   `;
+
+  // Fetch progress data and render progress bars and gantt
+  (async () => {
+    try {
+      const progressItems = await fetchJson('/api/reporting/feedback-progress');
+      renderProgressOverview(progressItems);
+      renderGanttOverview(progressItems);
+    } catch (err) {
+      console.error('Unable to load reporting progress data', err);
+      const el = document.getElementById('progressOverview');
+      if (el) el.innerHTML = '<p>Error loading progress data.</p>';
+    }
+  })();
 }
+
+  async function renderProgressOverview(items) {
+    const container = document.getElementById('progressOverview');
+    if (!container) return;
+    if (!items || !items.length) {
+      container.innerHTML = '<p>No open feedback items.</p>';
+      return;
+    }
+
+    container.innerHTML = items.map((it) => {
+      const actionCount = it.actionCount || 0;
+      const closed = it.actionClosedCount || 0;
+      const percent = actionCount ? Math.round((closed / actionCount) * 100) : 0;
+      return `
+        <div class="progress-item">
+          <div class="progress-meta"><strong>${it.id}</strong> — <span class="truncate" title="${it.shortDescription}">${it.shortDescription}</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${percent}%;"></div></div>
+          <div class="progress-text">${closed}/${actionCount} actions — ${percent}%</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderGanttOverview(items) {
+    const container = document.getElementById('ganttOverview');
+    if (!container) return;
+    if (!items || !items.length) {
+      container.innerHTML = '<p>No items for Gantt.</p>';
+      return;
+    }
+
+    // compute timeline bounds
+    const parsed = items.map((it) => {
+      const start = new Date(it.createdAt).getTime();
+      const end = it.dueDateCompletion ? new Date(it.dueDateCompletion).getTime() : (start + 7 * 24 * 60 * 60 * 1000);
+      return { id: it.id, shortDescription: it.shortDescription, start, end };
+    });
+    const minStart = Math.min(...parsed.map(p => p.start));
+    const maxEnd = Math.max(...parsed.map(p => p.end));
+    const total = Math.max(1, maxEnd - minStart);
+
+    container.innerHTML = '';
+    const gantt = document.createElement('div');
+    gantt.className = 'gantt-container';
+    parsed.forEach((p) => {
+      const row = document.createElement('div');
+      row.className = 'gantt-row';
+      const left = ((p.start - minStart) / total) * 100;
+      const width = ((p.end - p.start) / total) * 100;
+      row.innerHTML = `
+        <div class="gantt-label">${p.id}: ${p.shortDescription}</div>
+        <div class="gantt-track"><div class="gantt-bar" style="left:${left}%; width:${width}%;"></div></div>
+      `;
+      gantt.appendChild(row);
+    });
+    container.appendChild(gantt);
+  }
 
 function renderFilterOptions() {
   statusFilter.innerHTML = '<option value="all">All</option>' + statusValues.map((status) => `<option value="${status}">${status}</option>`).join('');
@@ -833,3 +905,22 @@ renderFilterOptions();
 showRole(roleSelect.value);
 loadOwnerActions.addEventListener('click', loadOwnerActionsList);
 if (ownerFilterSelect) ownerFilterSelect.addEventListener('change', loadOwnerActionsList);
+
+function setupAdminTabs() {
+  const tabs = document.querySelectorAll('.admin-tab');
+  const panels = document.querySelectorAll('.admin-tab-panel');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      const name = tab.dataset.tab;
+      const panel = document.getElementById(`adminTab_${name}`);
+      if (panel) panel.classList.add('active');
+      // load users if users tab
+      if (name === 'users') loadAdminUsers();
+    });
+  });
+}
+
+setupAdminTabs();

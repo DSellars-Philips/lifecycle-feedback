@@ -112,11 +112,33 @@
     </section>
 
     <div id="adminConsole" class="modal hidden">
-      <div class="modal-content">
-        <h2>Admin - User management</h2>
+      <div class="modal-content admin-modal-content">
+        <div class="admin-header">
+          <h2>Admin Console</h2>
+          <div class="admin-tabs" role="tablist">
+            <button class="admin-tab active" data-tab="users">Users</button>
+            <button class="admin-tab" data-tab="groups">Groups</button>
+            <button class="admin-tab" data-tab="settings">Settings</button>
+          </div>
+        </div>
         <div id="adminMessage" class="notice"></div>
-        <div id="adminUserList"></div>
-        <button id="closeAdminConsole" type="button">Close</button>
+        <div class="admin-tab-panels">
+          <div id="adminTab_users" class="admin-tab-panel active">
+            <h3>User Management</h3>
+            <div id="adminUserList"></div>
+          </div>
+          <div id="adminTab_groups" class="admin-tab-panel">
+            <h3>Groups (coming soon)</h3>
+            <p>Manage stakeholder groups here.</p>
+          </div>
+          <div id="adminTab_settings" class="admin-tab-panel">
+            <h3>Settings (coming soon)</h3>
+            <p>Admin settings and integrations.</p>
+          </div>
+        </div>
+        <div class="admin-footer">
+          <button id="closeAdminConsole" type="button">Close</button>
+        </div>
       </div>
     </div>
   </div>
