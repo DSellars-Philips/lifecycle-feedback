@@ -434,52 +434,50 @@ async function showFeedbackDetail(feedbackId) {
       <h3>Feedback ${feedback.id}</h3>
       <div class="detail-modal-grid">
         <div class="detail-modal-section">
-          <div><strong>Short description:</strong> ${feedback.shortDescription}</div>
-          <div><strong>Long description:</strong> <pre>${feedback.longDescription}</pre></div>
-          <div><strong>Submitted by:</strong> ${feedback.submitterEmail || feedback.submitterName || '-'}</div>
-          <div><strong>Type:</strong> ${feedback.feedbackType}</div>
-          <div><strong>Team ownership:</strong> ${feedback.teamOwner || '-'}</div>
-          <div><strong>Action owner:</strong> ${feedback.actionOwner || '-'}</div>
-          <div><strong>Product:</strong> ${feedback.productName || '-'}</div>
-          <div><strong>Next action due:</strong> ${feedback.dueDateNextAction || '-'}</div>
-          <div><strong>Completion due:</strong> ${feedback.dueDateCompletion || '-'}</div>
-          <div><strong>Triage decision:</strong> ${feedback.triageDecision}</div>
-          <div><strong>Triage comment:</strong> ${feedback.triageComment || '-'}</div>
-          <div><strong>Attachments:</strong>
-            <ul class="preview-list">
-              ${attachments.map((attach) => `<li><a href="${attach.url}" target="_blank">${attach.originalName}</a></li>`).join('') || '<li>No attachments</li>'}
-            </ul>
-          </div>
-        </div>
-        <div class="detail-modal-section">
-          <h4>Update feedback</h4>
           <form id="feedbackUpdateForm">
-            <label>Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
-            <label>Type<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
-            <label>Team owner<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
+            <label>Description<textarea disabled rows="5">${feedback.longDescription || ''}</textarea></label>
+            <label>Feedback Status<select name="status">${statusValues.map((status) => `<option value="${status}" ${feedback.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></label>
+            <label>Type of Feedback<input type="text" name="feedbackType" value="${feedback.feedbackType || ''}" /></label>
+            <label>Team owning the feedback item's execution<input type="text" name="teamOwner" value="${feedback.teamOwner || ''}" /></label>
             <label>Action owner<input type="email" name="actionOwner" value="${feedback.actionOwner || ''}" placeholder="owner@example.com" /></label>
-            <label>Next action due<input type="date" name="dueDateNextAction" value="${feedback.dueDateNextAction || ''}" /></label>
-            <label>Completion due<input type="date" name="dueDateCompletion" value="${feedback.dueDateCompletion || ''}" /></label>
-            <label>Triage decision<select name="triageDecision"><option value="Pending" ${feedback.triageDecision === 'Pending' ? 'selected' : ''}>Pending</option><option value="Accepted" ${feedback.triageDecision === 'Accepted' ? 'selected' : ''}>Accepted</option><option value="Declined" ${feedback.triageDecision === 'Declined' ? 'selected' : ''}>Declined</option></select></label>
-            <label>Triage comment<textarea name="triageComment">${feedback.triageComment || ''}</textarea></label>
+            <label>Planned date to complete activities on the feedback<input type="date" name="dueDateCompletion" value="${feedback.dueDateCompletion || ''}" /></label>
+            <label>Triage Decision<select name="triageDecision"><option value="Pending" ${feedback.triageDecision === 'Pending' ? 'selected' : ''}>Pending</option><option value="Accepted" ${feedback.triageDecision === 'Accepted' ? 'selected' : ''}>Accepted</option><option value="Declined" ${feedback.triageDecision === 'Declined' ? 'selected' : ''}>Declined</option></select></label>
+            <label>Triage Comment<textarea name="triageComment">${feedback.triageComment || ''}</textarea></label>
             <button type="submit">Save updates</button>
           </form>
-          <h4 class="mt-20">Next Actions</h4>
+
+          <h4 class="mt-20">Status Updates</h4>
+          <p class="status-updates-note">Enter an update summary below. New updates are prepended and saved with your email and timestamp so the latest progress appears first.</p>
           <form id="nextActionUpdateForm" class="next-action-update">
-            <label>Add an update<textarea name="nextActionUpdate" placeholder="Enter your update here"></textarea></label>
+            <label>Status update<textarea name="nextActionUpdate" placeholder="Enter your update here"></textarea></label>
             <button type="submit">Add update</button>
           </form>
           <div class="next-actions-list" id="nextActionsList">
             ${feedback.nextActions ? feedback.nextActions.split('\n').map((line) => `<p>${line}</p>`).join('') : '<p>No updates yet</p>'}
           </div>
         </div>
+
+        <div class="detail-modal-section">
+          <div class="action-plans-header">
+            <h4>Actions planned</h4>
+            <button type="button" id="addNewActionButton" class="secondary-button">Add New Action</button>
+          </div>
+          <div id="actionPlanList">
+            ${actions.length ? actions.map((action) => `
+              <div class="action-plan-card">
+                <div><strong>Action Description</strong></div>
+                <div>${action.title}</div>
+                <div><strong>Action Owner</strong></div>
+                <div>${action.owner || 'Unassigned'}</div>
+                <div><strong>Due Date</strong></div>
+                <div>${action.dueDate || 'None'}</div>
+              </div>
+            `).join('') : '<p>No actions planned yet.</p>'}
+          </div>
+          <div id="newActionFormContainer"></div>
+        </div>
       </div>
-      <div class="detail-modal-section">
-        <h4>Actions</h4>
-        <ul class="preview-list">
-          ${actions.map((action) => `<li><strong>${action.title}</strong> [${action.status}] assigned to ${action.owner || 'unassigned'} - due ${action.dueDate || 'none'}. Result: ${action.result || 'TBD'}</li>`).join('') || '<li>No actions yet</li>'}
-        </ul>
-      </div>
+
       <div class="detail-modal-section">
         <h4>History</h4>
         <ul class="preview-list">
@@ -539,35 +537,55 @@ async function showFeedbackDetail(feedbackId) {
     nextActionUpdateForm.reset();
   });
 
-  const actionAddForm = document.getElementById('actionAddForm');
+  const actionPlanList = document.getElementById('actionPlanList');
+  const newActionFormContainer = document.getElementById('newActionFormContainer');
+  const addNewActionButton = document.getElementById('addNewActionButton');
 
-  updateForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(updateForm).entries());
-    data.userEmail = currentUserEmail;
-    await fetchJson(`/api/feedback/${feedback.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  function renderActionCards(actions) {
+    actionPlanList.innerHTML = actions.length ? actions.map((action) => `
+      <div class="action-plan-card">
+        <div><strong>Action Description</strong></div>
+        <div>${action.title}</div>
+        <div><strong>Action Owner</strong></div>
+        <div>${action.owner || 'Unassigned'}</div>
+        <div><strong>Due Date</strong></div>
+        <div>${action.dueDate || 'None'}</div>
+      </div>
+    `).join('') : '<p>No actions planned yet.</p>';
+  }
+
+  function renderNewActionForm() {
+    newActionFormContainer.innerHTML = `
+      <form id="newActionForm">
+        <label>Action Description<input type="text" name="title" required /></label>
+        <label>Action Owner<input type="email" name="owner" placeholder="owner@example.com" required /></label>
+        <label>Due Date<input type="date" name="dueDate" /></label>
+        <button type="submit">Save action</button>
+      </form>
+    `;
+
+    const newActionForm = document.getElementById('newActionForm');
+    newActionForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(newActionForm);
+      const data = Object.fromEntries(formData.entries());
+      data.createdBy = currentUserEmail;
+      data.userEmail = currentUserEmail;
+      await fetchJson(`/api/feedback/${feedback.id}/actions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      await showFeedbackDetail(feedback.id);
+      await loadDashboard();
     });
-    await loadDashboard();
-    await loadFeedback();
-    showFeedbackDetail(feedback.id);
+  }
+
+  addNewActionButton.addEventListener('click', () => {
+    renderNewActionForm();
   });
 
-  actionAddForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(actionAddForm).entries());
-    data.createdBy = currentUserEmail;
-    data.userEmail = currentUserEmail;
-    await fetchJson(`/api/feedback/${feedback.id}/actions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    await showFeedbackDetail(feedback.id);
-    await loadDashboard();
-  });
+  renderActionCards(actions);
 }
 
 async function loadOwnerActionsList() {

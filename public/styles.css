@@ -93,6 +93,12 @@ body {
   margin-top: 0;
 }
 
+.status-updates-note {
+  margin: 0 0 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
 .next-actions-list {
   max-height: 220px;
   overflow-y: auto;
@@ -101,6 +107,39 @@ body {
   border-radius: 12px;
   padding: 14px;
   margin-top: 10px;
+}
+
+.action-plans-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.secondary-button {
+  background: transparent;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.action-plan-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.action-plan-card div {
+  margin-bottom: 8px;
+}
+
+#newActionFormContainer {
+  margin-top: 16px;
 }
 
 .next-actions-list p {
